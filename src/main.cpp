@@ -2,8 +2,17 @@
 #include <WinSock2.h>
 #pragma comment(lib,"ws2_32.lib")
 
-int main(){
-     
-    std::cout<<11;
+int main() {
+	WSADATA wsaData;
+	WSAStartup(MAKEWORD(2, 2), &wsaData);
 
+
+	SOCKET listen_socket = socket(AF_INET, SOCK_DGRAM, 0);
+	if (listen_socket == INVALID_SOCKET) {
+		printf("´´½¨socketÊ§°Ü, ´íÎóÂë: %d\n", GetLastError());
+		return -1;
+	}
+
+
+	return 0;
 }
