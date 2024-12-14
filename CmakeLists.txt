@@ -1,8 +1,14 @@
 # 指定CMake版本
  cmake_minimum_required(VERSION 3.10) 
+ # 设置C++标准
+set(CMAKE_CXX_STANDARD 11)
  # 指定项目名称 
- project(ChatRoom)  
+project(ChatRoom)  
 
+# 添加源文件
+add_executable(server "src/server.cpp")
+add_executable(client "src/client.cpp")
 
- # 添加源代码文件
- add_executable(ChatRoom "src/main.cpp")
+# 链接 Winsock2 库
+target_link_libraries(server ws2_32)
+target_link_libraries(client ws2_32)
