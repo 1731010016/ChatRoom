@@ -1,19 +1,49 @@
 #include <iostream>
 #include <thread>
+#include <vector>
+#include <mutex>
 #include <WinSock2.h>
 #pragma comment(lib,"ws2_32.lib")
 
+std::vector<SOCKET> clients;  // 存储所有客户端的 socket
+std::mutex clients_mutex;     // 保护 clients 的互斥锁
+
+// 广播消息给所有客户端
+void broadcast_message(const char* message, SOCKET sender_socket) {
+    std::lock_guard<std::mutex> lock(clients_mutex);  // 保证线程安全
+    for (SOCKET client_socket : clients) {
+        if (client_socket != sender_socket) {
+            send(client_socket, message, (int)strlen(message), 0);
+        }
+          
+    }
+}
+
 void handle_client(SOCKET client_socket) {
+    {
+        std::lock_guard<std::mutex> lock(clients_mutex);  // 保护 clients 的互斥锁
+        clients.push_back(client_socket);  // 新客户端加入聊天室
+    }
     printf("%llu: 加入聊天\n", client_socket);
+
     while (1) {
         char buffer[1024] = { 0 };
         int ret = recv(client_socket, buffer, 1024, 0);
         if (ret <= 0) {
-            break;
+            break; // 客户端断开连接
         }
         printf("%llu: %s\n", client_socket, buffer);
-        // 原封不动发回去
-        send(client_socket, buffer, (int)strlen(buffer), 0);
+        // 将收到的消息广播给所有客户端
+        broadcast_message(buffer, client_socket);
+    }
+
+    // 客户端断开连接后从列表中移除
+    {
+        std::lock_guard<std::mutex> lock(clients_mutex);
+        auto it = std::find(clients.begin(), clients.end(), client_socket);
+        if (it != clients.end()) {
+            clients.erase(it);
+        }
     }
     closesocket(client_socket);
     printf("%llu: 离开聊天\n", client_socket);
